@@ -7,11 +7,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
+using NetCoreSecureApi.Filters;
 using NetCoreSecureApi.Models;
 
 namespace NetCoreSecureApi.Controllers
 {
     [Route("api/[controller]")]
+    [ValidateModel]
     public class CampsController : BaseController
     {
         private ICampRepository _repo;
@@ -50,17 +52,15 @@ namespace NetCoreSecureApi.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest();
+                _logger.LogError($"Threw exception while fetching camp: {ex}");
             }
+            return BadRequest();
         }
         [HttpPost]
         public async Task<IActionResult> Post([FromBody]CampModel model)
         {
             try
             {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
-
                 _logger.LogInformation("Creating a new Code Camp");
 
                 var camp = _mapper.Map<Camp>(model);
@@ -80,7 +80,6 @@ namespace NetCoreSecureApi.Controllers
             {
                 _logger.LogError($"Threw exception while saving camp: {ex}");
             }
-
             return BadRequest();
         }
         [HttpPut("{moniker}")]
@@ -88,9 +87,6 @@ namespace NetCoreSecureApi.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
-
                 var oldCamp = _repo.GetCampByMoniker(moniker);
 
                 if (oldCamp == null)
@@ -103,9 +99,8 @@ namespace NetCoreSecureApi.Controllers
             }
             catch (Exception ex)
             {
-              
+                _logger.LogError($"Threw exception while updating camp: {ex}");
             }
-
             return BadRequest("Couldn't update Camp");
         }
 
@@ -126,9 +121,8 @@ namespace NetCoreSecureApi.Controllers
             }
             catch (Exception ex)
             {
-                
+                _logger.LogError($"Threw exception while deleting camp: {ex}");
             }
-
             return BadRequest("Can't delete Camp");
         }
     }

@@ -30,6 +30,14 @@ namespace NetCoreSecureApi.Models
                     PostalCode = c.LocationPostalCode,
                     Country = c.LocationCountry
                 }));
+
+            CreateMap<Speaker, SpeakerModel>()
+                .ForMember(s => s.Url, opt => opt.ResolveUsing<SpeakerUrlResolver>()) 
+                .ReverseMap();
+
+            CreateMap<Talk, TalkModel>()
+                .ForMember(s => s.Url, opt => opt.ResolveUsing<TalkUrlResolver>())
+                .ReverseMap();
         }
     }
 }
