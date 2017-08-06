@@ -9,6 +9,8 @@ using MyCodeCamp.Data;
 using MyCodeCamp.Data.Entities;
 using NetCoreSecureApi.Filters;
 using NetCoreSecureApi.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
 namespace NetCoreSecureApi.Controllers
 {
@@ -19,15 +21,18 @@ namespace NetCoreSecureApi.Controllers
         private readonly ICampRepository _repository;
         private readonly ILogger<SpeakersController> _logger;
         private readonly IMapper _mapper;
+        private readonly UserManager<CampUser> _userManager;
 
         public SpeakersController(
             ICampRepository repository,
             ILogger<SpeakersController> logger,
-            IMapper mapper)
+            IMapper mapper,
+            UserManager<CampUser> userManager)
         {
             _repository = repository;
             _logger = logger;
             _mapper = mapper;
+            _userManager = userManager;
         }
 
         [HttpGet]
@@ -66,6 +71,7 @@ namespace NetCoreSecureApi.Controllers
             return BadRequest();
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> Post(string moniker, [FromBody]SpeakerModel model)
         {
@@ -78,16 +84,21 @@ namespace NetCoreSecureApi.Controllers
                 var speaker = _mapper.Map<Speaker>(model);
                 speaker.Camp = camp;
 
-                _repository.Add(speaker);
-
-                if (await _repository.SaveAllAsync())
+                var campUser = await _userManager.FindByNameAsync(this.User.Identity.Name);
+                if(campUser != null)
                 {
-                    var url = Url.Link("SpeakerGet", new
+                    speaker.User = campUser;
+                    _repository.Add(speaker);
+
+                    if (await _repository.SaveAllAsync())
                     {
-                        moniker = camp.Moniker,
-                        id = speaker.Id
-                    });
-                    return Created(url, _mapper.Map<SpeakerModel>(speaker));
+                        var url = Url.Link("SpeakerGet", new
+                        {
+                            moniker = camp.Moniker,
+                            id = speaker.Id
+                        });
+                        return Created(url, _mapper.Map<SpeakerModel>(speaker));
+                    }
                 }
             }
             catch (Exception ex)
@@ -96,6 +107,8 @@ namespace NetCoreSecureApi.Controllers
             }
             return BadRequest("Couldn't add new speaker");
         }
+
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(string moniker, int id, [FromBody]SpeakerModel model)
         {
@@ -106,6 +119,9 @@ namespace NetCoreSecureApi.Controllers
                     return NotFound();
                 if (speaker.Camp.Moniker != moniker)
                     return BadRequest("Speaker and Camp do not match");
+
+                if (speaker.User.UserName == User.Identity.Name)
+                    return Forbid();
 
                 _mapper.Map(model, speaker);
 
@@ -120,6 +136,7 @@ namespace NetCoreSecureApi.Controllers
             return BadRequest("Couldn't update a speaker");
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string moniker, int id)
         {
@@ -130,6 +147,9 @@ namespace NetCoreSecureApi.Controllers
                     return NotFound();
                 if (speaker.Camp.Moniker != moniker)
                     return BadRequest("Speaker and Camp do not match");
+
+                if (speaker.User.UserName == User.Identity.Name)
+                    return Forbid();
 
                 _repository.Delete(speaker);
 

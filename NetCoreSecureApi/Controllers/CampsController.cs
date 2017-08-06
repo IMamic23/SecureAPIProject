@@ -6,12 +6,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.Extensions.Logging;
 using NetCoreSecureApi.Filters;
 using NetCoreSecureApi.Models;
 
 namespace NetCoreSecureApi.Controllers
 {
+    [Authorize]
+    [EnableCors("AnyGET")]
     [Route("api/[controller]")]
     [ValidateModel]
     public class CampsController : BaseController
@@ -56,6 +60,8 @@ namespace NetCoreSecureApi.Controllers
             }
             return BadRequest();
         }
+
+        [EnableCors("Wildermuth")]
         [HttpPost]
         public async Task<IActionResult> Post([FromBody]CampModel model)
         {
@@ -82,6 +88,7 @@ namespace NetCoreSecureApi.Controllers
             }
             return BadRequest();
         }
+
         [HttpPut("{moniker}")]
         public async Task<IActionResult> Put(string moniker, [FromBody]CampModel model)
         {
