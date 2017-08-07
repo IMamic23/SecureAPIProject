@@ -18,6 +18,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.VisualBasic;
 using MyCodeCamp.Data;
 using MyCodeCamp.Data.Entities;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace NetCoreSecureApi
 {
@@ -93,6 +95,11 @@ namespace NetCoreSecureApi
                 });
             });
 
+            services.AddAuthorization(config =>
+            {
+                config.AddPolicy("SuperUsers", p => p.RequireClaim("SuperUser", "True"));
+            });
+
             // Add framework services.
             services.AddMvc(options =>
                 {
@@ -119,6 +126,20 @@ namespace NetCoreSecureApi
             loggerFactory.AddDebug();
 
             app.UseIdentity();
+
+            app.UseJwtBearerAuthentication(new JwtBearerOptions()
+            {
+                AutomaticAuthenticate = true,
+                AutomaticChallenge = true,
+                TokenValidationParameters = new TokenValidationParameters()
+                {
+                    ValidIssuer = Config["Tokens:Issuer"],
+                    ValidAudience = Config["Tokens:Audience"],
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Config["Tokens:Key"])),
+                    ValidateLifetime = true
+                }
+            });
 
             //app.UseCors(config =>
             //{
