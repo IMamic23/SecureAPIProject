@@ -20,6 +20,10 @@ using MyCodeCamp.Data;
 using MyCodeCamp.Data.Entities;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.AspNetCore.Mvc.Versioning.Conventions;
+using NetCoreSecureApi.Controllers;
+using NetCoreSecureApi.Models;
 
 namespace NetCoreSecureApi
 {
@@ -53,6 +57,8 @@ namespace NetCoreSecureApi
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddAutoMapper();
 
+            services.AddMemoryCache();
+
             services.AddIdentity<CampUser, IdentityRole>()
                 .AddEntityFrameworkStores<CampContext>();
 
@@ -76,6 +82,20 @@ namespace NetCoreSecureApi
                             return Task.CompletedTask;
                         }
                     };
+            });
+
+            services.AddApiVersioning(config =>
+            {
+                config.DefaultApiVersion = new ApiVersion(1, 0);
+                config.AssumeDefaultVersionWhenUnspecified = true;
+                config.ReportApiVersions = true;
+                config.ApiVersionReader = new HeaderApiVersionReader("ver");
+
+                config.Conventions.Controller<TalksController>()
+                    .HasApiVersion(new ApiVersion(1,0))
+                    .HasApiVersion(new ApiVersion(2,0))
+                    .Action(m => m.Post(default(string),default(int), default(TalkModel)))
+                    .MapToApiVersion(new ApiVersion(2,0));
             });
 
             services.AddCors(config =>

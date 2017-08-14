@@ -16,12 +16,14 @@ namespace NetCoreSecureApi.Controllers
 {
     [Route("api/camps/{moniker}/speakers")]
     [ValidateModel]
+    [ApiVersion("1.0")]
+    [ApiVersion("1.1")]
     public class SpeakersController : BaseController
     {
-        private readonly ICampRepository _repository;
-        private readonly ILogger<SpeakersController> _logger;
-        private readonly IMapper _mapper;
-        private readonly UserManager<CampUser> _userManager;
+        protected readonly ICampRepository _repository;
+        protected readonly ILogger<SpeakersController> _logger;
+        protected readonly IMapper _mapper;
+        protected readonly UserManager<CampUser> _userManager;
 
         public SpeakersController(
             ICampRepository repository,
@@ -43,6 +45,23 @@ namespace NetCoreSecureApi.Controllers
                 var speakers = includeTalks ? _repository.GetSpeakersByMonikerWithTalks(moniker) : _repository.GetSpeakersByMoniker(moniker);
 
                 return Ok(_mapper.Map<IEnumerable<SpeakerModel>>(speakers));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Threw error while fetching speakers: {ex}");
+            }
+            return BadRequest();
+        }
+
+        [HttpGet]
+        [MapToApiVersion("1.1")]
+        public virtual IActionResult GetWithCount(string moniker, bool includeTalks = false)
+        {
+            try
+            {
+                var speakers = includeTalks ? _repository.GetSpeakersByMonikerWithTalks(moniker) : _repository.GetSpeakersByMoniker(moniker);
+
+                return Ok(new { count = speakers.Count(), result = _mapper.Map<IEnumerable<SpeakerModel>>(speakers) });
             }
             catch (Exception ex)
             {
